@@ -70,7 +70,7 @@ class FedAvgAggregator(Aggregator):
                     self._exec(job_model_pars, self.base_model_path, job.get_job_id(), fed_step)
                     self.fed_step[job.get_job_id()] = fed_step
                     WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST.append(job.get_job_id())
-                    if job.get_iterations() <= self.fed_step[job.get_job_id()]:
+                    if job.get_epoch() <= self.fed_step[job.get_job_id()]:
                         self._save_final_model_pars(job.get_job_id(), os.path.join(self.base_model_path, "models_{}".format(job.get_job_id()), "tmp_aggregate_pars"), self.fed_step[job.get_job_id()])
                     if self.work_mode == WorkModeStrategy.WORKMODE_CLUSTER:
                         self._broadcast(WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST, CONNECTED_TRAINER_LIST, self.base_model_path)

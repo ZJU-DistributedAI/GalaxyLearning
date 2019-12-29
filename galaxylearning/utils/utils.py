@@ -78,7 +78,6 @@ class JobEncoder(json.JSONEncoder):
                         'job_id': o.get_job_id(),
                         'train_model': o.get_train_model(),
                         'train_strategy': json.dumps(o.get_train_strategy(), cls=TrainStrategyFatorcyEncoder),
-                        'iterations': o.get_iterations(),
                         'train_model_class_name': o.get_train_model_class_name(),
                         'server_host': o.get_server_host(),
                         'aggregate_strategy': o.get_aggregate_strategy().value,
@@ -92,7 +91,7 @@ class JobDecoder(json.JSONDecoder):
         #server_host, job_id, train_strategy, train_model, train_model_class_name, iterations
         return Job(dict['server_host'], dict['job_id'],
                    json.loads(dict['train_strategy'], cls=TrainStrategyFactoryDecoder), dict['train_model'], dict['train_model_class_name'],
-                   dict['aggregate_strategy'], dict['iterations'], dict['distillation_alpha'])
+                   dict['aggregate_strategy'], dict['distillation_alpha'])
 
 
 

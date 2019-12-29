@@ -50,9 +50,9 @@ def generate_train_strategy(optimizer, loss_function, lr=0.01, epoch=100, batch_
 if __name__ == "__main__":
     #startup(strategy.WorkModeStrategy.WORKMODE_STANDALONE)
     train_code_strategy = generate_train_strategy(strategy.RunTimeStrategy.OPTIM_SGD, strategy.RunTimeStrategy.NLL_LOSS,
-                                                  lr=0.01, epoch=100, batch_size=32)
+                                                  lr=0.01, epoch=3, batch_size=32)
 
     model = Net()
     job_manager = JobManager(JOB_PATH)
-    job = job_manager.generate_job(strategy.WorkModeStrategy.WORKMODE_CLUSTER, train_code_strategy, strategy.FederateStrategy.FED_DISTILLATION, Net, 3, 0.5)
+    job = job_manager.generate_job(strategy.WorkModeStrategy.WORKMODE_CLUSTER, train_code_strategy, strategy.FederateStrategy.FED_DISTILLATION, Net, 0.5)
     job_manager.submit_job(job, model, MODEL_PATH)

@@ -90,9 +90,12 @@ class TrainNormalStrategy(TrainStrategy):
 
         optimizer = self._parse_optimizer(train_strategy.get_optimizer(), train_model,
                                           train_strategy.get_learning_rate())
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         for idx, (batch_data, batch_target) in enumerate(dataloader):
-            batch_data, batch_target = batch_data.cuda(), batch_target.cuda()
-            train_model = train_model.cuda()
+            batch_data, batch_target = batch_data.to(device), batch_target.to(device)
+            train_model = train_model.to(device)
             pred = torch.log(train_model(batch_data))
             loss = self._compute_loss(train_strategy.get_loss_function(), pred, batch_target)
             optimizer.zero_grad()
@@ -190,11 +193,13 @@ class TrainDistillationStrategy(TrainNormalStrategy):
         optimizer = self._parse_optimizer(train_strategy.get_optimizer(), train_model,
                                           train_strategy.get_learning_rate())
 
-        train_model, other_model = train_model.cuda(), copy.deepcopy(train_model)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        train_model, other_model = train_model.to(device), copy.deepcopy(train_model)
 
         for idx, (batch_data, batch_target) in enumerate(dataloader):
-            batch_data = batch_data.cuda()
-            batch_target = batch_target.cuda()
+            batch_data = batch_data.to(device)
+            batch_target = batch_target.to(device)
             kl_pred = train_model(batch_data)
             pred = torch.log(kl_pred)
 
@@ -210,7 +215,7 @@ class TrainDistillationStrategy(TrainNormalStrategy):
             loss.backward()
             optimizer.step()
             if idx % 200 == 0:
-                print("loss: ", loss.item())
+                print("distillation_loss: ", loss.item())
 
         torch.save(train_model.state_dict(),
                    os.path.join(job_models_path, "tmp_parameters_{}".format(self.fed_step[self.job.get_job_id()] + 1)))
@@ -226,7 +231,7 @@ class TrainStandloneNormalStrategy(TrainNormalStrategy):
             self.job_iter_dict[self.job.get_job_id()]
             print("test_iter_num: ", self.job_iter_dict[self.job.get_job_id()])
             if self.job_iter_dict.get(self.job.get_job_id()) is not None \
-                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_iterations():
+                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
                 break
             aggregat_file, fed_step = self._find_latest_aggregate_model_pars(self.job.get_job_id())
             if aggregat_file is not None and self.fed_step.get(self.job.get_job_id()) != fed_step:
@@ -256,7 +261,7 @@ class TrainStandloneDistillationStrategy(TrainDistillationStrategy):
                 self.job_iter_dict[self.job.get_job_id()]
             # print("test_iter_num: ", self.job_iter_dict[self.job.get_job_id()])
             if self.job_iter_dict.get(self.job.get_job_id()) is not None \
-                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_iterations():
+                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
                 break
             aggregate_file, fed_step = self._find_latest_aggregate_model_pars(self.job.get_job_id())
             if aggregate_file is not None and self.fed_step.get(self.job.get_job_id()) != fed_step:
@@ -267,11 +272,11 @@ class TrainStandloneDistillationStrategy(TrainDistillationStrategy):
             job_model = self._load_job_model(self.job.get_job_id(), self.job.get_train_model_class_name())
             job_models_path = self._create_job_models_dir(self.client_id, self.job.get_job_id())
             if is_sync:
-                print("execute model distillation")
+                print("==========execute model distillation==========")
                 self._train_with_kl(job_model, other_model_pars,
                                     os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id())))
                 self.job_iter_dict[self.job.get_job_id()] = fed_step
-                print("model distillation success")
+                print("==========model distillation success==========")
             # if self.job.get_job_id() not in runtime_config.EXEC_JOB_LIST:
             #     if aggregate_file is not None:
             #         print("load {} parameters".format(aggregate_file))
@@ -294,7 +299,7 @@ class TrainMPCNormalStrategy(TrainNormalStrategy):
                 self.job_iter_dict[self.job.get_job_id()]
             # print("test_iter_num: ", self.job_iter_dict[self.job.get_job_id()])
             if self.job_iter_dict.get(self.job.get_job_id()) is not None \
-                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_iterations():
+                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
                 break
             self._prepare_job_model(self.job)
             self._prepare_job_init_model_pars(self.job, self.server_url)
@@ -324,8 +329,8 @@ class TrainMPCDistillationStrategy(TrainDistillationStrategy):
     def train(self):
         while True:
             if self.fed_step.get(self.job.get_job_id()) is not None and self.fed_step.get(
-                    self.job.get_job_id()) >= self.job.get_iterations():
-                final_pars_path = os.path.join(self.job_model_path, "models_{}".format(self.client_id),
+                    self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
+                final_pars_path = os.path.join(self.job_model_path, "models", "models_{}".format(self.client_id),
                                                "tmp_parameters_{}".format(self.fed_step.get(self.job.get_job_id())))
                 if not os.path.exists(final_pars_path):
                     self._save_final_parameters(self.job.get_job_id(), final_pars_path)

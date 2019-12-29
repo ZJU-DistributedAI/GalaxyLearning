@@ -16,11 +16,11 @@ class JobManager(object):
        self.job_path = job_path
 
 
-    def generate_job(self, work_mode, train_code_strategy, fed_strategy, model, iter, distillation_alpha):
+    def generate_job(self, work_mode, train_code_strategy, fed_strategy, model, distillation_alpha):
         with lock:
             #server_host, job_id, train_strategy, train_model, train_model_class_name, fed_strategy, iterations, distillation_alpha
             job = Job(None, JobUtils.generate_job_id(), train_code_strategy, inspect.getsourcefile(model),
-                      model.__name__, fed_strategy, iter, distillation_alpha)
+                      model.__name__, fed_strategy, distillation_alpha)
             if work_mode == WorkModeStrategy.WORKMODE_STANDALONE:
                 job.set_server_host("localhost:8080")
             else:

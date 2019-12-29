@@ -9,7 +9,7 @@ from galaxylearning.core.job_manager import JobManager
 
 
 API_VERSION = "/api/v1"
-JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")
+JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs_server")
 BASE_MODEL_PATH = os.path.join(os.path.abspath("."), "res", "models")
 
 app = Flask(__name__)

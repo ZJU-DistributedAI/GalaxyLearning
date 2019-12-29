@@ -42,9 +42,10 @@ class JobManager(object):
                 with open(job.get_train_model(), "r") as model_f2:
                     for line in model_f2.readlines():
                         model_f.write(line)
-
-            f = open(os.path.join(self.job_path, "job_{}".format(job.get_job_id())), "wb")
-            pickle.dump(job, f)
+            if not os.path.exists(self.job_path):
+                os.mkdir(self.job_path)
+            with open(os.path.join(self.job_path, "job_{}".format(job.get_job_id())), "wb") as f:
+                pickle.dump(job, f)
 
             print("job {} added successfully".format(job.get_job_id()))
 

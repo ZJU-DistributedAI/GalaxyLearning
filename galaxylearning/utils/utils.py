@@ -3,10 +3,11 @@ import datetime
 import pickle
 import json
 import os
+import requests
 from json.decoder import WHITESPACE
 
 from galaxylearning.entity.job import Job
-from galaxylearning.core.strategy import TrainStrategyFatorcy
+from galaxylearning.core.strategy import TrainStrategyFatorcy, FederateStrategy, RunTimeStrategy
 
 class JobIdCount(object):
 
@@ -54,6 +55,22 @@ class JobUtils(Utils):
         return pickle.dumps(job)
 
 
+    @staticmethod
+    def get_job_from_remote(server_url, job_path):
+        if not os.path.exists(job_path):
+            os.mkdir(job_path)
+        response = requests.get("/".join([server_url, "jobs"]))
+        response_data = response.json()
+        job_list_str = response_data['data']
+        for job_str in job_list_str:
+            job = json.loads(job_str, cls=JobDecoder)
+            job_filename = os.path.join(job_path, "job_{}".format(job.get_job_id()))
+            with open(job_filename, "wb") as job_f:
+                pickle.dump(job, job_f)
+
+
+
+
 class JobEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, Job):
@@ -64,7 +81,7 @@ class JobEncoder(json.JSONEncoder):
                         'iterations': o.get_iterations(),
                         'train_model_class_name': o.get_train_model_class_name(),
                         'server_host': o.get_server_host(),
-                        'aggregate_strategy': o.get_aggregate_strategy(),
+                        'aggregate_strategy': o.get_aggregate_strategy().value,
                         'distillation_alpha': o.get_distillation_alpha()
                     }
         return json.JSONEncoder.default(self, o)
@@ -85,10 +102,10 @@ class TrainStrategyFatorcyEncoder(json.JSONEncoder):
             return {
                        'batch_size': o.get_batch_size(),
                        'epoch': o.get_epoch(),
-                       'fed_strategies': o.get_fed_strategies(),
+                       # 'fed_strategies': o.get_fed_strategies(),
                        'learning_rate': o.get_learning_rate(),
-                       'loss_function': o.get_loss_function(),
-                       'optimizer': o.get_optimizer()
+                       'loss_function': o.get_loss_function().value,
+                       'optimizer': o.get_optimizer().value
                     }
         return json.JSONEncoder.default(self, o)
 
@@ -99,6 +116,8 @@ class TrainStrategyFactoryDecoder(json.JSONDecoder):
         #optimizer, learning_rate, loss_function, batch_size, epoch
         return TrainStrategyFatorcy(dict['optimizer'], dict['learning_rate'], dict['loss_function'],
                                     dict['batch_size'], dict['epoch'])
+
+
 
 
 

@@ -1,6 +1,6 @@
 import torch
 import os, sys
-sys.path.append("C:\\Users\\tchennech\\Documents\\FederateLearningalaxylearningibrary")
+sys.path.append("C:\\Users\\tchennech\\Documents\\GalaxyLearning")
 from torchvision import datasets, transforms
 from galaxylearning.core.strategy import WorkModeStrategy
 from galaxylearning.core.trainer_controller import TrainerController

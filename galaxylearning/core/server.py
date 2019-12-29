@@ -4,23 +4,23 @@ import time
 import os
 from concurrent.futures import ThreadPoolExecutor
 from galaxylearning.core.aggregator import FedAvgAggregator
-from galaxylearning.core.strategy import WorkModeStrategy, FedrateStrategy
+from galaxylearning.core.strategy import WorkModeStrategy, FederateStrategy
 from galaxylearning.core import communicate_server
 
-JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")
+JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs_server")
 BASE_MODEL_PATH = os.path.join(os.path.abspath("."), "res", "models")
 
-class TianshuFlServer():
+class FlServer(object):
 
     def __init__(self):
-        super(TianshuFlServer, self).__init__()
+        super(FlServer, self).__init__()
 
 
-class TianshuFlStandaloneServer(TianshuFlServer):
+class FlStandaloneServer(FlServer):
     def __init__(self, federate_strategy):
-        super(TianshuFlStandaloneServer, self).__init__()
+        super(FlStandaloneServer, self).__init__()
         self.executor_pool = ThreadPoolExecutor(2)
-        if federate_strategy == FedrateStrategy.FED_AVG:
+        if federate_strategy == FederateStrategy.FED_AVG:
             self.aggregator = FedAvgAggregator(WorkModeStrategy.WORKMODE_STANDALONE, JOB_PATH, BASE_MODEL_PATH)
         else:
            pass
@@ -33,12 +33,12 @@ class TianshuFlStandaloneServer(TianshuFlServer):
 
 
 
-class TianshuFlClusterServer(TianshuFlServer):
+class FlClusterServer(FlServer):
 
     def __init__(self, federate_strategy, ip, port, api_version):
-        super(TianshuFlClusterServer, self).__init__()
+        super(FlClusterServer, self).__init__()
         self.executor_pool = ThreadPoolExecutor(5)
-        if federate_strategy == FedrateStrategy.FED_AVG:
+        if federate_strategy == FederateStrategy.FED_AVG:
             self.aggregator = FedAvgAggregator(WorkModeStrategy.WORKMODE_CLUSTER, JOB_PATH, BASE_MODEL_PATH)
         else:
             pass
@@ -51,7 +51,7 @@ class TianshuFlClusterServer(TianshuFlServer):
         self.executor_pool.submit(communicate_server.start_communicate_server, self.api_version, self.ip, self.port)
         #self.executor_pool.submit(self.aggregator.aggregate)
         #communicate_server.start_communicate_server(self.api_version, self.ip, self.port)
-        if self.federate_strategy == FedrateStrategy.FED_AVG:
+        if self.federate_strategy == FederateStrategy.FED_AVG:
             self.aggregator.aggregate()
         else:
             pass

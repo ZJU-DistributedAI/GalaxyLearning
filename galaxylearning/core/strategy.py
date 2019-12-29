@@ -10,7 +10,7 @@ class WorkModeStrategy(Enum):
 
 
 
-class FedrateStrategy(Enum):
+class FederateStrategy(Enum):
     FED_AVG = "fed_avg"
     FED_DISTILLATION = "fed_distillation"
 
@@ -51,7 +51,7 @@ class TrainStrategyFatorcy(StrategyFactory):
 
 
     def get_fed_strategies(self):
-        fed_strategies = [FedrateStrategy.FED_AVG, FedrateStrategy.FED_DISTILLATION]
+        fed_strategies = [FederateStrategy.FED_AVG, FederateStrategy.FED_DISTILLATION]
         return fed_strategies
 
     def get_optim_strategies(self):
@@ -62,9 +62,9 @@ class TrainStrategyFatorcy(StrategyFactory):
     def set_optimizer(self, optimizer):
         optim_strategies = self.get_optim_strategies()
         if optimizer in optim_strategies:
-            self.optimizer = optimizer
+            self.optimizer = optimizer.value
         else:
-            raise exceptions.TianshuFLException("optimizer strategy not found")
+            raise exceptions.GLException("optimizer strategy not found")
 
     def get_optimizer(self):
         return self.optimizer
@@ -78,9 +78,9 @@ class TrainStrategyFatorcy(StrategyFactory):
     def set_loss_function(self, loss_function):
         loss_functions = self.get_loss_functions()
         if loss_function in loss_functions:
-            self.loss_function = loss_function
+            self.loss_function = loss_function.value
         else:
-            raise exceptions.TianshuFLException("loss strategy not found")
+            raise exceptions.GLException("loss strategy not found")
 
     def get_loss_function(self):
         return self.loss_function

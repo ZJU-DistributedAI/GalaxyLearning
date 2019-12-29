@@ -2,7 +2,7 @@
 
 
 
-class TianshuFLException(Exception):
+class GLException(Exception):
 
     def __init__(self, value):
         self.value = value

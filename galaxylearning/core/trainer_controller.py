@@ -1,5 +1,6 @@
 import torch
 import json
+import threading
 import torch.nn.functional as F
 import time, os, pickle, requests, importlib, shutil, copy
 from flask import url_for
@@ -9,11 +10,11 @@ from galaxylearning.core.strategy import RunTimeStrategy
 from galaxylearning.core import communicate_client
 from galaxylearning.utils.utils import JobDecoder, JobUtils
 from galaxylearning.entity.job import Job
-from galaxylearning.core.strategy import WorkModeStrategy, FedrateStrategy
+from galaxylearning.core.strategy import WorkModeStrategy, FederateStrategy
 from galaxylearning.core.trainer import TrainStandloneNormalStrategy, TrainMPCNormalStrategy, TrainStandloneDistillationStrategy, TrainMPCDistillationStrategy
 
 
-JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")
+JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs_client")
 
 class TrainerController(object):
     def __init__(self, work_mode, data, client_id, client_ip, client_port, server_url, concurrent_num=5):
@@ -25,11 +26,11 @@ class TrainerController(object):
         self.job_path = JOB_PATH
         self.fed_step = {}
         self.job_iter_dict = {}
+        self.job_train_strategy = {}
         self.is_finish = True
         self.client_ip = client_ip
         self.client_port = client_port
         self.server_url = server_url
-
 
 
     def start(self):
@@ -43,45 +44,52 @@ class TrainerController(object):
                 #self.trainer_executor_pool.submit(communicate_client.start_communicate_client, self.client_ip, self.client_port)
                 #self.trainer_executor_pool.submit(self._trainer_mpc_exec, self.server_url)
                 self.trainer_executor_pool.submit(communicate_client.start_communicate_client, self.client_ip, self.client_port)
-                self._trainer_mpc_exec(self.server_url)
+                self._trainer_mpc_exec()
             else:
                 print("connect to parameter server fail, please check your internet")
 
 
 
-
-
-
     def _trainer_standalone_exec(self):
-        job_train_strategy = {}
-        while True:
-            job_list = JobUtils.list_all_jobs(self.job_path, self.job_iter_dict)
-            for job in job_list:
-                if job_train_strategy.get(job.get_job_id()) is None:
-                    print(job.get_aggregate_strategy())
-                    if job.get_aggregate_strategy() == FedrateStrategy.FED_AVG:
-                        job_train_strategy[job.get_job_id()] = TrainStandloneNormalStrategy(job, self.data, self.fed_step, self.client_id)
-                    else:
-                        job_train_strategy[job.get_job_id()] = TrainStandloneDistillationStrategy(job, self.data, self.fed_step, self.client_id)
-                self.run(job_train_strategy.get(job.get_job_id()))
-            time.sleep(5)
+        t = threading.Timer(5, self._trainer_standalone_exec_impl)
+        t.start()
 
 
+    def _trainer_standalone_exec_impl(self):
+        job_list = JobUtils.list_all_jobs(self.job_path, self.job_iter_dict)
+        for job in job_list:
+            if self.job_train_strategy.get(job.get_job_id()) is None:
+                print(job.get_aggregate_strategy())
+                if job.get_aggregate_strategy() == FederateStrategy.FED_AVG.value:
+                    self.job_train_strategy[job.get_job_id()] = TrainStandloneNormalStrategy(job, self.data, self.fed_step,
+                                                                                        self.client_id)
+                else:
+                    self.job_train_strategy[job.get_job_id()] = TrainStandloneDistillationStrategy(job, self.data,
+                                                                                              self.fed_step,
+                                                                                              self.client_id)
+                self.run(self.job_train_strategy.get(job.get_job_id()))
 
 
-    def _trainer_mpc_exec(self, server_url):
-        job_train_strategy = {}
-        while True:
-            job_list = JobUtils.list_all_jobs(self.job_path, self.job_iter_dict)
-            for job in job_list:
-                if job_train_strategy.get(job.get_job_id()) is None:
-                    if job.get_aggregate_strategy() == FedrateStrategy.FED_AVG:
-                        job_train_strategy[job.get_job_id()] = job_train_strategy[job.get_job_id()] = TrainMPCNormalStrategy(job, self.data, self.fed_step, self.client_ip, self.client_port, server_url, self.client_id)
-                    else:
-                        job_train_strategy[job.get_job_id()] = TrainMPCDistillationStrategy(job, self.data, self.fed_step, self.client_ip, self.client_port, server_url, self.client_id)
-                self.run(job_train_strategy.get(job.get_job_id()))
-            time.sleep(5)
+    def _trainer_mpc_exec(self):
+        t = threading.Timer(5, self._trainer_mpc_exec_impl)
+        t.start()
 
+    def _trainer_mpc_exec_impl(self):
+
+        JobUtils.get_job_from_remote(self.server_url, self.job_path)
+        job_list = JobUtils.list_all_jobs(self.job_path, self.job_iter_dict)
+        for job in job_list:
+            if self.job_train_strategy.get(job.get_job_id()) is None:
+                if job.get_aggregate_strategy() == FederateStrategy.FED_AVG.value:
+                    self.job_train_strategy[job.get_job_id()] = self.job_train_strategy[
+                        job.get_job_id()] = TrainMPCNormalStrategy(job, self.data, self.fed_step, self.client_ip,
+                                                                   self.client_port, self.server_url, self.client_id)
+                else:
+                    self.job_train_strategy[job.get_job_id()] = TrainMPCDistillationStrategy(job, self.data, self.fed_step,
+                                                                                        self.client_ip,
+                                                                                        self.client_port, self.server_url,
+                                                                                        self.client_id)
+                self.run(self.job_train_strategy.get(job.get_job_id()))
 
 
     def run(self, trainer):

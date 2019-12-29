@@ -1,11 +1,11 @@
 import os, sys
 from torch import nn
 import torch.nn.functional as F
-sys.path.append("C:\\Users\\tchennech\\Documents\\FederateLearningalaxylearningibrary")
+sys.path.append("C:\\Users\\tchennech\\Documents\\GalaxyLearning")
 import galaxylearning.core.strategy as strategy
 from galaxylearning.core.job_manager import JobManager
 
-JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")
+JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs_server")
 MODEL_PATH = os.path.join(os.path.abspath("."), "res", "models")
 SERVER_HOST = "http://127.0.0.1:9673"
 
@@ -54,5 +54,5 @@ if __name__ == "__main__":
 
     model = Net()
     job_manager = JobManager(JOB_PATH)
-    job = job_manager.generate_job(strategy.WorkModeStrategy.WORKMODE_CLUSTER, train_code_strategy, strategy.FedrateStrategy.FED_DISTILLATION, Net, 3, 0.5)
+    job = job_manager.generate_job(strategy.WorkModeStrategy.WORKMODE_CLUSTER, train_code_strategy, strategy.FederateStrategy.FED_DISTILLATION, Net, 3, 0.5)
     job_manager.submit_job(job, model, MODEL_PATH)

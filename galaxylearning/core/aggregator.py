@@ -6,9 +6,9 @@ import time
 import requests
 import importlib
 from concurrent.futures import ThreadPoolExecutor
-from gl.core.strategy import WorkModeStrategy
-from gl.core.job_manager import JobManager
-from gl.entity.runtime_config import WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST, CONNECTED_TRAINER_LIST
+from galaxylearning.core.strategy import WorkModeStrategy
+from galaxylearning.core.job_manager import JobManager
+from galaxylearning.entity.runtime_config import WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST, CONNECTED_TRAINER_LIST
 
 
 LOCAL_AGGREGATE_FILE = os.path.join("tmp_aggregate_pars", "avg_pars")

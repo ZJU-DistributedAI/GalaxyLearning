@@ -1,2 +1,2 @@
-# GalaxyLearning
-Galaxy learning library 
+# galaxylearningaxyLearning
+galaxylearningaxy learning library 

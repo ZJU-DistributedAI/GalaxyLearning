@@ -3,10 +3,10 @@ import threading
 import pickle
 import os, json
 import inspect
-from gl.entity import runtime_config
-from gl.entity.job import Job
-from gl.utils.utils import JobUtils
-from gl.core.strategy import WorkModeStrategy
+from galaxylearning.entity import runtime_config
+from galaxylearning.entity.job import Job
+from galaxylearning.utils.utils import JobUtils
+from galaxylearning.core.strategy import WorkModeStrategy
 
 lock = threading.RLock()
 

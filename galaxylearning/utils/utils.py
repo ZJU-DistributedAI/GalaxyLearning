@@ -5,8 +5,8 @@ import json
 import os
 from json.decoder import WHITESPACE
 
-from gl.entity.job import Job
-from gl.core.strategy import TrainStrategyFatorcy
+from galaxylearning.entity.job import Job
+from galaxylearning.core.strategy import TrainStrategyFatorcy
 
 class JobIdCount(object):
 

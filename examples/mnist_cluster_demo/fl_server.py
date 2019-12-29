@@ -1,7 +1,7 @@
 
-from gl.core.server import TianshuFlStandaloneServer, TianshuFlClusterServer
-from gl.core.job_detector import JobDetector
-from gl.core.strategy import WorkModeStrategy, FedrateStrategy
+from galaxylearning.core.server import TianshuFlStandaloneServer, TianshuFlClusterServer
+from galaxylearning.core.job_detector import JobDetector
+from galaxylearning.core.strategy import WorkModeStrategy, FedrateStrategy
 
 WORK_MODE = WorkModeStrategy.WORKMODE_CLUSTER
 FEDERATE_STRATEGY = FedrateStrategy.FED_DISTILLATION

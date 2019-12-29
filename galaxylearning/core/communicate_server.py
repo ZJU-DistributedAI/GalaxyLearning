@@ -2,9 +2,9 @@
 import os, json
 from flask import Flask, send_from_directory, request
 from werkzeug.serving import run_simple
-from gl.utils.utils import JobEncoder, return_data_decorator
-from gl.entity.runtime_config import CONNECTED_TRAINER_LIST
-from gl.core.job_manager import JobManager
+from galaxylearning.utils.utils import JobEncoder, return_data_decorator
+from galaxylearning.entity.runtime_config import CONNECTED_TRAINER_LIST
+from galaxylearning.core.job_manager import JobManager
 
 
 

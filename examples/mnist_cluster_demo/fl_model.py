@@ -1,9 +1,9 @@
 import os, sys
 from torch import nn
 import torch.nn.functional as F
-sys.path.append("C:\\Users\\tchennech\\Documents\\FederateLearningLibrary")
-import gl.core.strategy as strategy
-from gl.core.job_manager import JobManager
+sys.path.append("C:\\Users\\tchennech\\Documents\\FederateLearningalaxylearningibrary")
+import galaxylearning.core.strategy as strategy
+from galaxylearning.core.job_manager import JobManager
 
 JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")
 MODEL_PATH = os.path.join(os.path.abspath("."), "res", "models")

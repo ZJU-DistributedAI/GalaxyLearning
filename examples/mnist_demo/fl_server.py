@@ -1,8 +1,8 @@
 import sys
-sys.path.append("C:\\Users\\tchennech\\Documents\\FederateLearningLibrary")
+sys.path.append("C:\\Users\\tchennech\\Documents\\FederateLearningalaxylearningibrary")
 
-from gl.core.server import TianshuFlStandaloneServer, TianshuFlClusterServer
-from gl.core.strategy import WorkModeStrategy, FedrateStrategy
+from galaxylearning.core.server import TianshuFlStandaloneServer, TianshuFlClusterServer
+from galaxylearning.core.strategy import WorkModeStrategy, FedrateStrategy
 
 
 WORK_MODE = WorkModeStrategy.WORKMODE_STANDALONE

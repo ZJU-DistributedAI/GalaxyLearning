@@ -3,9 +3,9 @@ import threading
 import time
 import os
 from concurrent.futures import ThreadPoolExecutor
-from gl.core.aggregator import FedAvgAggregator
-from gl.core.strategy import WorkModeStrategy, FedrateStrategy
-from gl.core import communicate_server
+from galaxylearning.core.aggregator import FedAvgAggregator
+from galaxylearning.core.strategy import WorkModeStrategy, FedrateStrategy
+from galaxylearning.core import communicate_server
 
 JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")
 BASE_MODEL_PATH = os.path.join(os.path.abspath("."), "res", "models")

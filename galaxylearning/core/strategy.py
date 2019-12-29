@@ -1,7 +1,7 @@
 
 #federate strategies
 from enum import Enum
-import gl.exceptions.fl_expection as exceptions
+import galaxylearning.exceptions.fl_expection as exceptions
 
 
 class WorkModeStrategy(Enum):
@@ -25,7 +25,7 @@ class RunTimeStrategy(Enum) :
     KLDIV_LOSS = "KLDivLoss"
     BCE_LOSS = "BCELoss"
     BCEWITHLOGITS_Loss = "BCEWithLogitsLoss"
-    MARGINRANKING_Loss = "MarginRankingLoss"
+    MARGINRANKING_Loss = "MarginRankingalaxylearningoss"
     OPTIM_SGD = "SGD"
     OPTIM_ADAM = "Adam"
 

@@ -4,13 +4,13 @@ import torch.nn.functional as F
 import time, os, pickle, requests, importlib, shutil, copy
 from flask import url_for
 from concurrent.futures import ThreadPoolExecutor
-from gl.entity import runtime_config
-from gl.core.strategy import RunTimeStrategy
-from gl.core import communicate_client
-from gl.utils.utils import JobDecoder, JobUtils
-from gl.entity.job import Job
-from gl.core.strategy import WorkModeStrategy, FedrateStrategy
-from gl.core.trainer import TrainStandloneNormalStrategy, TrainMPCNormalStrategy, TrainStandloneDistillationStrategy, TrainMPCDistillationStrategy
+from galaxylearning.entity import runtime_config
+from galaxylearning.core.strategy import RunTimeStrategy
+from galaxylearning.core import communicate_client
+from galaxylearning.utils.utils import JobDecoder, JobUtils
+from galaxylearning.entity.job import Job
+from galaxylearning.core.strategy import WorkModeStrategy, FedrateStrategy
+from galaxylearning.core.trainer import TrainStandloneNormalStrategy, TrainMPCNormalStrategy, TrainStandloneDistillationStrategy, TrainMPCDistillationStrategy
 
 
 JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs")

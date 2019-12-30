@@ -4,6 +4,7 @@ import pickle
 import json
 import os
 import requests
+import shutil
 from json.decoder import WHITESPACE
 
 from galaxylearning.entity.job import Job
@@ -42,7 +43,7 @@ class JobUtils(Utils):
         job_list = []
         for file in os.listdir(job_path):
             # print("job file: ", job_path+"\\"+file)
-            with open(job_path + "\\" + file, "rb") as f:
+            with open(os.path.join(job_path, file), "rb") as f:
                 job = pickle.load(f)
                 job_list.append(job)
                 if job_iter_dict.get(job.get_job_id()) is None:
@@ -59,14 +60,24 @@ class JobUtils(Utils):
     def get_job_from_remote(server_url, job_path):
         if not os.path.exists(job_path):
             os.mkdir(job_path)
-        response = requests.get("/".join([server_url, "jobs"]))
-        response_data = response.json()
-        job_list_str = response_data['data']
-        for job_str in job_list_str:
-            job = json.loads(job_str, cls=JobDecoder)
-            job_filename = os.path.join(job_path, "job_{}".format(job.get_job_id()))
-            with open(job_filename, "wb") as job_f:
-                pickle.dump(job, job_f)
+        if server_url is None:
+            job_server_path = os.path.join(os.path.dirname(job_path), "jobs_server")
+            for file in os.listdir(job_server_path):
+                with open(os.path.join(job_server_path, file), "rb") as job_f:
+                    job = pickle.load(job_f)
+                    job_str = json.dumps(job, cls=JobEncoder)
+                    new_job = json.loads(job_str, cls=JobDecoder)
+                    with open(os.path.join(job_path, file), "wb") as new_job_f:
+                        pickle.dump(new_job, new_job_f)
+        else:
+            response = requests.get("/".join([server_url, "jobs"]))
+            response_data = response.json()
+            job_list_str = response_data['data']
+            for job_str in job_list_str:
+                job = json.loads(job_str, cls=JobDecoder)
+                job_filename = os.path.join(job_path, "job_{}".format(job.get_job_id()))
+                with open(job_filename, "wb") as job_f:
+                    pickle.dump(job, job_f)
 
 
 

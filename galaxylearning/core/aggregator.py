@@ -20,7 +20,7 @@ class Aggregator(object):
         self.aggregate_executor_pool = ThreadPoolExecutor(concurrent_num)
         self.work_mode = work_mode
 
-    def load_aggregate_model_pars(self, job_model_pars_path, fed_step):
+    def load_model_pars(self, job_model_pars_path, fed_step):
         fed_step = 0 if fed_step is None else fed_step
         job_model_pars = []
         last_model_par_file_num = 0
@@ -62,15 +62,15 @@ class FedAvgAggregator(Aggregator):
             job_list = JobManager.get_job_list(self.job_path)
             WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST.clear()
             for job in job_list:
-                job_model_pars, fed_step = self.load_aggregate_model_pars(os.path.join(self.base_model_path, "models_{}".format(job.get_job_id())), self.fed_step.get(job.get_job_id()))
+                job_model_pars, fed_step = self.load_model_pars(os.path.join(self.base_model_path, "models_{}".format(job.get_job_id())), self.fed_step.get(job.get_job_id()))
                 #print("fed_step: {}, self.fed_step: {}, job_model_pars: {}".format(fed_step, self.fed_step.get(job.get_job_id()), job_model_pars))
                 job_fed_step = 0 if self.fed_step.get(job.get_job_id()) is None else self.fed_step.get(job.get_job_id())
                 if job_fed_step != fed_step and job_model_pars is not None:
-                    print("execute aggregate ")
+                    print("Aggregating......")
                     self._exec(job_model_pars, self.base_model_path, job.get_job_id(), fed_step)
                     self.fed_step[job.get_job_id()] = fed_step
                     WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST.append(job.get_job_id())
-                    if job.get_epoch() <= self.fed_step[job.get_job_id()]:
+                    if job.get_train_strategy().get_epoch() <= self.fed_step[job.get_job_id()]:
                         self._save_final_model_pars(job.get_job_id(), os.path.join(self.base_model_path, "models_{}".format(job.get_job_id()), "tmp_aggregate_pars"), self.fed_step[job.get_job_id()])
                     if self.work_mode == WorkModeStrategy.WORKMODE_CLUSTER:
                         self._broadcast(WAITING_BROADCAST_AGGREGATED_JOB_ID_LIST, CONNECTED_TRAINER_LIST, self.base_model_path)
@@ -85,7 +85,7 @@ class FedAvgAggregator(Aggregator):
                 avg_model_par[key] += job_model_pars[i][key]
             avg_model_par[key] = torch.div(avg_model_par[key], len(job_model_pars))
         tmp_aggregate_dir = os.path.join(base_model_path, "models_{}".format(job_id))
-        tmp_aggregate_path = os.path.join(base_model_path +"models_{}".format(job_id), "{}_{}".format(LOCAL_AGGREGATE_FILE, fed_step))
+        tmp_aggregate_path = os.path.join(base_model_path, "models_{}".format(job_id), "{}_{}".format(LOCAL_AGGREGATE_FILE, fed_step))
         if not os.path.exists(tmp_aggregate_dir):
             os.makedirs(tmp_aggregate_path)
         torch.save(avg_model_par, tmp_aggregate_path)
@@ -113,9 +113,7 @@ class FedAvgAggregator(Aggregator):
 
     def _save_final_model_pars(self,  job_id, tmp_aggregate_dir, fed_step):
         job_model_dir = os.path.join(self.base_model_path, "models_{}".format(job_id))
-        final_model_pars_path = os.path.join(job_model_dir, "final_model_pars")
-        if not os.path.exists(job_model_dir):
-            os.makedirs(job_model_dir)
+        final_model_pars_path = os.path.join(os.path.abspath("."), "final_model_pars_{}".format(job_id))
         last_aggregate_file = os.path.join(tmp_aggregate_dir, "avg_pars_{}".format(fed_step))
         with open(final_model_pars_path, "wb") as final_f:
             with open(last_aggregate_file, "rb") as f:

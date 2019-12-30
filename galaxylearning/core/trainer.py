@@ -152,11 +152,20 @@ class TrainNormalStrategy(TrainStrategy):
         }
         return files
 
+    def _save_final_parameters(self, job_id, final_pars_path):
+        file_path = os.path.join(os.path.abspath("."), "final_model_pars_{}".format(job_id))
+        if os.path.exists(file_path):
+            return
+        with open(file_path, "wb") as w_f:
+            with open(final_pars_path, "rb") as r_f:
+                for line in r_f.readlines():
+                    w_f.write(line)
+
 
 class TrainDistillationStrategy(TrainNormalStrategy):
     def __init__(self, job, data, fed_step, client_id):
         super(TrainDistillationStrategy, self).__init__(job, data, fed_step, client_id)
-        self.job_model_path = os.path.join(os.path.abspath("."), "models_{}".format(job.get_job_id()))
+        self.job_model_path = os.path.join(os.path.abspath("."), "res", "models", "models_{}".format(job.get_job_id()))
 
     def _load_other_models_pars(self, job_id, fed_step):
         job_model_base_path = os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(job_id))
@@ -169,15 +178,6 @@ class TrainDistillationStrategy(TrainNormalStrategy):
                 else:
                     other_models_pars.append(torch.load(os.path.join(job_model_base_path, f, files[-1])))
         return other_models_pars, True
-
-    def _save_final_parameters(self, job_id, final_pars_path):
-        file_path = os.path.join(os.path.abspath("."), "final_model_pars_{}".format(job_id))
-        if os.path.exists(file_path):
-            return
-        with open(file_path, "wb") as w_f:
-            with open(final_pars_path, "rb") as r_f:
-                for line in r_f.readlines():
-                    w_f.write(line)
 
     def _calc_rate(self, received, total):
         if total == 0:
@@ -227,11 +227,10 @@ class TrainStandloneNormalStrategy(TrainNormalStrategy):
 
     def train(self):
         while True:
-            self.job_iter_dict[self.job.get_job_id()] = 0 if self.job_iter_dict.get(self.job.get_job_id()) is None else \
-            self.job_iter_dict[self.job.get_job_id()]
-            print("test_iter_num: ", self.job_iter_dict[self.job.get_job_id()])
-            if self.job_iter_dict.get(self.job.get_job_id()) is not None \
-                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
+            self.fed_step[self.job.get_job_id()] = 0 if self.fed_step.get(self.job.get_job_id()) is None else \
+                self.fed_step.get(self.job.get_job_id())
+            if self.fed_step.get(self.job.get_job_id()) is not None and self.fed_step.get(
+                    self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
                 break
             aggregat_file, fed_step = self._find_latest_aggregate_model_pars(self.job.get_job_id())
             if aggregat_file is not None and self.fed_step.get(self.job.get_job_id()) != fed_step:
@@ -247,7 +246,6 @@ class TrainStandloneNormalStrategy(TrainNormalStrategy):
                 print("job_{} is start training".format(self.job.get_job_id()))
                 runtime_config.EXEC_JOB_LIST.append(self.job.get_job_id())
                 self._train(job_model, job_models_path)
-                self.job_iter_dict[self.job.get_job_id()] = fed_step
 
 
 class TrainStandloneDistillationStrategy(TrainDistillationStrategy):
@@ -257,33 +255,31 @@ class TrainStandloneDistillationStrategy(TrainDistillationStrategy):
 
     def train(self):
         while True:
-            self.job_iter_dict[self.job.get_job_id()] = 0 if self.job_iter_dict.get(self.job.get_job_id()) is None else \
-                self.job_iter_dict[self.job.get_job_id()]
+            self.fed_step[self.job.get_job_id()] = 1 if self.fed_step.get(
+                self.job.get_job_id()) is None else self.fed_step.get(self.job.get_job_id())
             # print("test_iter_num: ", self.job_iter_dict[self.job.get_job_id()])
-            if self.job_iter_dict.get(self.job.get_job_id()) is not None \
-                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
+            if self.fed_step.get(self.job.get_job_id()) is not None and self.fed_step.get(
+                    self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
+                final_pars_path = os.path.join(self.job_model_path, "models_{}".format(self.client_id),
+                                               "tmp_parameters_{}".format(self.fed_step.get(self.job.get_job_id())))
+                if os.path.exists(final_pars_path):
+                    self._save_final_parameters(self.job.get_job_id(), final_pars_path)
                 break
-            aggregate_file, fed_step = self._find_latest_aggregate_model_pars(self.job.get_job_id())
-            if aggregate_file is not None and self.fed_step.get(self.job.get_job_id()) != fed_step:
-                if self.job.get_job_id() in runtime_config.EXEC_JOB_LIST:
-                    runtime_config.EXEC_JOB_LIST.remove(self.job.get_job_id())
-                self.fed_step[self.job.get_job_id()] = fed_step
-            other_model_pars, is_sync = self._load_other_models_pars(self.job.get_job_id(), fed_step)
+            aggregate_file, _ = self._find_latest_aggregate_model_pars(self.job.get_job_id())
+            other_model_pars, is_sync = self._load_other_models_pars(self.job.get_job_id(), self.fed_step[self.job.get_job_id()])
             job_model = self._load_job_model(self.job.get_job_id(), self.job.get_train_model_class_name())
-            job_models_path = self._create_job_models_dir(self.client_id, self.job.get_job_id())
+            # job_models_path = self._create_job_models_dir(self.client_id, self.job.get_job_id())
+            if self.fed_step[self.job.get_job_id()] == 1:
+                job_model.load_state_dict(torch.load(aggregate_file))
             if is_sync:
                 print("==========execute model distillation==========")
                 self._train_with_kl(job_model, other_model_pars,
-                                    os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id())))
-                self.job_iter_dict[self.job.get_job_id()] = fed_step
+                                    os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()), "models_{}".format(self.client_id)))
+                self.fed_step[self.job.get_job_id()] = self.fed_step.get(self.job.get_job_id()) + 1
                 print("==========model distillation success==========")
-            # if self.job.get_job_id() not in runtime_config.EXEC_JOB_LIST:
-            #     if aggregate_file is not None:
-            #         print("load {} parameters".format(aggregate_file))
-            #         job_model.load_state_dict(torch.load(aggregate_file))
-            #     print("job_{} is start training".format(self.job.get_job_id()))
-            #     runtime_config.EXEC_JOB_LIST.append(self.job.get_job_id())
-            #     self._train(job_model, job_models_path)
+            else:
+                self._train(job_model, os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()), "models_{}".format(self.client_id)))
+
 
 
 class TrainMPCNormalStrategy(TrainNormalStrategy):
@@ -295,11 +291,15 @@ class TrainMPCNormalStrategy(TrainNormalStrategy):
 
     def train(self):
         while True:
-            self.job_iter_dict[self.job.get_job_id()] = 0 if self.job_iter_dict.get(self.job.get_job_id()) is None else \
-                self.job_iter_dict[self.job.get_job_id()]
+            self.fed_step[self.job.get_job_id()] = 0 if self.fed_step.get(self.job.get_job_id()) is None else \
+                self.fed_step.get(self.job.get_job_id())
             # print("test_iter_num: ", self.job_iter_dict[self.job.get_job_id()])
-            if self.job_iter_dict.get(self.job.get_job_id()) is not None \
-                    and self.job_iter_dict.get(self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
+            if self.fed_step.get(self.job.get_job_id()) is not None and self.fed_step.get(
+                    self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
+                final_pars_path = os.path.join(self.job_model_path, "models_{}".format(self.client_id),
+                                               "tmp_parameters_{}".format(self.fed_step.get(self.job.get_job_id())))
+                if os.path.exists(final_pars_path):
+                    self._save_final_parameters(self.job.get_job_id(), final_pars_path)
                 break
             self._prepare_job_model(self.job)
             self._prepare_job_init_model_pars(self.job, self.server_url)
@@ -316,7 +316,7 @@ class TrainMPCNormalStrategy(TrainNormalStrategy):
                     [self.server_url, "modelpars", "%s" % self.client_id, "%s" % self.job.get_job_id(),
                      "%s" % self.fed_step[self.job.get_job_id()]]),
                     data=None, files=files)
-                print(response)
+                #print(response)
 
 
 class TrainMPCDistillationStrategy(TrainDistillationStrategy):
@@ -330,9 +330,9 @@ class TrainMPCDistillationStrategy(TrainDistillationStrategy):
         while True:
             if self.fed_step.get(self.job.get_job_id()) is not None and self.fed_step.get(
                     self.job.get_job_id()) >= self.job.get_train_strategy().get_epoch():
-                final_pars_path = os.path.join(self.job_model_path, "models", "models_{}".format(self.client_id),
+                final_pars_path = os.path.join(self.job_model_path, "models_{}".format(self.client_id),
                                                "tmp_parameters_{}".format(self.fed_step.get(self.job.get_job_id())))
-                if not os.path.exists(final_pars_path):
+                if os.path.exists(final_pars_path):
                     self._save_final_parameters(self.job.get_job_id(), final_pars_path)
                 break
             self._prepare_job_model(self.job)

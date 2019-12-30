@@ -56,5 +56,5 @@ if __name__ == "__main__":
     job_manager = JobManager(JOB_PATH)
     #job = job_manager.generate_job(strategy.WorkModeStrategy.WORKMODE_STANDALONE, train_code_strategy, strategy.FederateStrategy.FED_AVG, Net, 5, None)
     job = job_manager.generate_job(strategy.WorkModeStrategy.WORKMODE_STANDALONE, train_code_strategy,
-                                   strategy.FederateStrategy.FED_DISTILLATION, Net, 0.5)
+                                   strategy.FederateStrategy.FED_AVG, Net, 0.5)
     job_manager.submit_job(job, model, MODEL_PATH)

@@ -35,7 +35,7 @@ class TrainerController(object):
 
     def start(self):
         if self.work_mode == WorkModeStrategy.WORKMODE_STANDALONE:
-            self.trainer_executor_pool.submit(self._trainer_standalone_exec)
+            self._trainer_standalone_exec()
             #self._trainer_standalone_exec()
         else:
             response = requests.post("/".join([self.server_url, "register", self.client_ip, '%s' % self.client_port, '%s' % self.client_id]))
@@ -43,6 +43,7 @@ class TrainerController(object):
             if response_json['code'] == 200 or response_json['code'] == 201:
                 #self.trainer_executor_pool.submit(communicate_client.start_communicate_client, self.client_ip, self.client_port)
                 #self.trainer_executor_pool.submit(self._trainer_mpc_exec, self.server_url)
+                #communicate_client.start_communicate_client(self.client_ip, int(self.client_port))
                 self.trainer_executor_pool.submit(communicate_client.start_communicate_client, self.client_ip, self.client_port)
                 self._trainer_mpc_exec()
             else:
@@ -56,6 +57,7 @@ class TrainerController(object):
 
 
     def _trainer_standalone_exec_impl(self):
+        JobUtils.get_job_from_remote(None, self.job_path)
         job_list = JobUtils.list_all_jobs(self.job_path, self.job_iter_dict)
         for job in job_list:
             if self.job_train_strategy.get(job.get_job_id()) is None:

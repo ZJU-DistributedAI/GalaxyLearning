@@ -3,7 +3,7 @@ from galaxylearning.core.server import FlStandaloneServer, FlClusterServer
 from galaxylearning.core.strategy import WorkModeStrategy, FederateStrategy
 
 WORK_MODE = WorkModeStrategy.WORKMODE_CLUSTER
-FEDERATE_STRATEGY = FederateStrategy.FED_DISTILLATION
+FEDERATE_STRATEGY = FederateStrategy.FED_AVG
 IP = '0.0.0.0'
 PORT = 9763
 API_VERSION = '/api/version'

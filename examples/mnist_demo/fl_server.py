@@ -1,6 +1,3 @@
-import sys
-sys.path.append("C:\\Users\\tchennech\\Documents\\GalaxyLearning")
-
 from galaxylearning.core.server import FlStandaloneServer, FlClusterServer
 from galaxylearning.core.strategy import WorkModeStrategy, FederateStrategy
 

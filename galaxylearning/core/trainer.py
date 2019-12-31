@@ -1,16 +1,14 @@
+import os
+import copy
 import torch
-import json
-import threading
+import shutil
+import logging
+import requests
+import importlib
 import torch.nn.functional as F
-import time, os, pickle, requests, importlib, shutil, copy
-from flask import url_for
-from concurrent.futures import ThreadPoolExecutor
-from galaxylearning.core.strategy import WorkModeStrategy
 from galaxylearning.entity import runtime_config
 from galaxylearning.core.strategy import RunTimeStrategy
-from galaxylearning.core import communicate_client
-from galaxylearning.utils.utils import JobDecoder
-from galaxylearning.entity.job import Job
+from galaxylearning.utils.utils import LoggerFactory
 
 JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs_client")
 LOCAL_MODEL_BASE_PATH = os.path.join(os.path.abspath("."), "res", "models")
@@ -24,6 +22,7 @@ class TrainStrategy(object):
         self.fed_step = {}
         self.job_iter_dict = {}
         self.job_path = JOB_PATH
+        self.logger = LoggerFactory.getLogger("TrainStrategy", logging.INFO)
 
     def _parse_optimizer(self, optimizer, model, lr):
         if optimizer == RunTimeStrategy.OPTIM_SGD.value:
@@ -102,7 +101,8 @@ class TrainNormalStrategy(TrainStrategy):
             loss.backward()
             optimizer.step()
             if idx % 200 == 0:
-                print("loss: ", loss.item())
+                self.logger.info("loss: {}".format(loss.item()))
+                # print("loss: ", loss.item())
 
         torch.save(train_model.state_dict(),
                    os.path.join(job_models_path, "tmp_parameters_{}".format(self.fed_step[self.job.get_job_id()])))
@@ -215,7 +215,8 @@ class TrainDistillationStrategy(TrainNormalStrategy):
             loss.backward()
             optimizer.step()
             if idx % 200 == 0:
-                print("distillation_loss: ", loss.item())
+                # print("distillation_loss: ", loss.item())
+                self.logger.info("distillation_loss: {}".format(loss.item()))
 
         torch.save(train_model.state_dict(),
                    os.path.join(job_models_path, "tmp_parameters_{}".format(self.fed_step[self.job.get_job_id()] + 1)))
@@ -236,14 +237,15 @@ class TrainStandloneNormalStrategy(TrainNormalStrategy):
             if aggregat_file is not None and self.fed_step.get(self.job.get_job_id()) != fed_step:
                 if self.job.get_job_id() in runtime_config.EXEC_JOB_LIST:
                     runtime_config.EXEC_JOB_LIST.remove(self.job.get_job_id())
+
                 self.fed_step[self.job.get_job_id()] = fed_step
             if self.job.get_job_id() not in runtime_config.EXEC_JOB_LIST:
                 job_model = self._load_job_model(self.job.get_job_id(), self.job.get_train_model_class_name())
                 if aggregat_file is not None:
-                    print("load {} parameters".format(aggregat_file))
+                    self.logger.info("load {} parameters".format(aggregat_file))
                     job_model.load_state_dict(torch.load(aggregat_file))
                 job_models_path = self._create_job_models_dir(self.client_id, self.job.get_job_id())
-                print("job_{} is start training".format(self.job.get_job_id()))
+                self.logger.info("job_{} is training, Aggregator strategy: {}".format(self.job.get_job_id(), self.job.get_aggregate_strategy()))
                 runtime_config.EXEC_JOB_LIST.append(self.job.get_job_id())
                 self._train(job_model, job_models_path)
 
@@ -266,20 +268,22 @@ class TrainStandloneDistillationStrategy(TrainDistillationStrategy):
                     self._save_final_parameters(self.job.get_job_id(), final_pars_path)
                 break
             aggregate_file, _ = self._find_latest_aggregate_model_pars(self.job.get_job_id())
-            other_model_pars, is_sync = self._load_other_models_pars(self.job.get_job_id(), self.fed_step[self.job.get_job_id()])
+            other_model_pars, is_sync = self._load_other_models_pars(self.job.get_job_id(),
+                                                                     self.fed_step[self.job.get_job_id()])
             job_model = self._load_job_model(self.job.get_job_id(), self.job.get_train_model_class_name())
             # job_models_path = self._create_job_models_dir(self.client_id, self.job.get_job_id())
             if self.fed_step[self.job.get_job_id()] == 1:
                 job_model.load_state_dict(torch.load(aggregate_file))
             if is_sync:
-                print("==========execute model distillation==========")
+                self.logger.info("model distillating....")
                 self._train_with_kl(job_model, other_model_pars,
-                                    os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()), "models_{}".format(self.client_id)))
+                                    os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()),
+                                                 "models_{}".format(self.client_id)))
                 self.fed_step[self.job.get_job_id()] = self.fed_step.get(self.job.get_job_id()) + 1
-                print("==========model distillation success==========")
+                self.logger.info("model distillation success")
             else:
-                self._train(job_model, os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()), "models_{}".format(self.client_id)))
-
+                self._train(job_model, os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()),
+                                                    "models_{}".format(self.client_id)))
 
 
 class TrainMPCNormalStrategy(TrainNormalStrategy):
@@ -316,7 +320,7 @@ class TrainMPCNormalStrategy(TrainNormalStrategy):
                     [self.server_url, "modelpars", "%s" % self.client_id, "%s" % self.job.get_job_id(),
                      "%s" % self.fed_step[self.job.get_job_id()]]),
                     data=None, files=files)
-                #print(response)
+                # print(response)
 
 
 class TrainMPCDistillationStrategy(TrainDistillationStrategy):
@@ -358,11 +362,11 @@ class TrainMPCDistillationStrategy(TrainDistillationStrategy):
                                                                self.fed_step.get(self.job.get_job_id()))
             if other_model_pars is not None and self._calc_rate(len(other_model_pars),
                                                                 len(connected_clients_id)) >= THRESHOLD:
-                print("execute model distillation")
+                self.logger.info("model distillating....")
                 self._train_with_kl(job_model, other_model_pars,
                                     os.path.join(LOCAL_MODEL_BASE_PATH, "models_{}".format(self.job.get_job_id()),
                                                  "models_{}".format(self.client_id)))
-                print("model distillation success")
+                self.logger.info("model distillation success")
                 self.fed_step[self.job.get_job_id()] = self.fed_step.get(self.job.get_job_id()) + 1
                 files = self._prepare_upload_client_model_pars(self.job.get_job_id(), self.client_id,
                                                                self.fed_step.get(self.job.get_job_id()))

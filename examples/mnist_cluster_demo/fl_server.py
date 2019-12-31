@@ -1,4 +1,3 @@
-
 from galaxylearning.core.server import FlStandaloneServer, FlClusterServer
 from galaxylearning.core.strategy import WorkModeStrategy, FederateStrategy
 
@@ -14,4 +13,3 @@ if __name__ == "__main__":
         FlStandaloneServer(FEDERATE_STRATEGY).start()
     else:
         FlClusterServer(FEDERATE_STRATEGY, IP, PORT, API_VERSION).start()
-

@@ -1,5 +1,4 @@
-
-#federate strategies
+# federate strategies
 from enum import Enum
 import galaxylearning.exceptions.fl_expection as exceptions
 
@@ -9,14 +8,12 @@ class WorkModeStrategy(Enum):
     WORKMODE_CLUSTER = "cluster"
 
 
-
 class FederateStrategy(Enum):
     FED_AVG = "fed_avg"
     FED_DISTILLATION = "fed_distillation"
 
 
-
-class RunTimeStrategy(Enum) :
+class RunTimeStrategy(Enum):
     L1_LOSS = "L1loss"
     MSE_LOSS = "MSELoss"
     CROSSENTROPY_LOSS = "CrossEntropyLoss"
@@ -34,6 +31,7 @@ class StrategyFactory(object):
     def __init__(self):
         pass
 
+
 class TrainStrategyFatorcy(StrategyFactory):
 
     def __init__(self, optimizer, learning_rate, loss_function, batch_size, epoch):
@@ -45,10 +43,11 @@ class TrainStrategyFatorcy(StrategyFactory):
         self.epoch = epoch
 
     def get_loss_functions(self):
-        loss_functions = [RunTimeStrategy.L1_LOSS, RunTimeStrategy.MSE_LOSS, RunTimeStrategy.CROSSENTROPY_LOSS, RunTimeStrategy.NLL_LOSS, RunTimeStrategy.POISSIONNLL_LOSS,
-                          RunTimeStrategy.KLDIV_LOSS, RunTimeStrategy.BCE_LOSS, RunTimeStrategy.BCEWITHLOGITS_Loss, RunTimeStrategy.MARGINRANKING_Loss]
+        loss_functions = [RunTimeStrategy.L1_LOSS, RunTimeStrategy.MSE_LOSS, RunTimeStrategy.CROSSENTROPY_LOSS,
+                          RunTimeStrategy.NLL_LOSS, RunTimeStrategy.POISSIONNLL_LOSS,
+                          RunTimeStrategy.KLDIV_LOSS, RunTimeStrategy.BCE_LOSS, RunTimeStrategy.BCEWITHLOGITS_Loss,
+                          RunTimeStrategy.MARGINRANKING_Loss]
         return loss_functions
-
 
     def get_fed_strategies(self):
         fed_strategies = [FederateStrategy.FED_AVG, FederateStrategy.FED_DISTILLATION]
@@ -57,7 +56,6 @@ class TrainStrategyFatorcy(StrategyFactory):
     def get_optim_strategies(self):
         optim_strategies = [RunTimeStrategy.OPTIM_SGD, RunTimeStrategy.OPTIM_ADAM]
         return optim_strategies
-
 
     def set_optimizer(self, optimizer):
         optim_strategies = self.get_optim_strategies()
@@ -102,6 +100,7 @@ class TrainStrategyFatorcy(StrategyFactory):
     #
     # def get_aggregate_strategy(self):
     #     return self.aggregate_strategy
+
 
 class TestStrategyFactory(StrategyFactory):
 

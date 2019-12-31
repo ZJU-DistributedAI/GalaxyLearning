@@ -5,13 +5,12 @@ from __future__ import print_function
 from setuptools import find_packages
 from setuptools import setup
 
-
 setup(
     name="galaxylearning",
-    version="0.1.0",
+    version="0.1.1",
     author="galaxylearningaxy Learning Author",
     author_email="yifan_hu@zju.edu.cn",
-    description="A Federated Learning Package Based on pytorch",
+    description="A Federated Learning Framework Based on pytorch",
     long_description='',
     license="Apache-2.0",
     url="https://github.com/ZJU-DistributedAI/galaxylearningaxyLearning",

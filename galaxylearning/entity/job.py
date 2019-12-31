@@ -1,9 +1,7 @@
-
-
-
 class Job(object):
 
-    def __init__(self, server_host, job_id, train_strategy, train_model, train_model_class_name, aggregate_strategy, distillation_alpha=None):
+    def __init__(self, server_host, job_id, train_strategy, train_model, train_model_class_name, aggregate_strategy,
+                 distillation_alpha=None):
         self.server_host = server_host
         self.job_id = job_id
         self.train_strategy = train_strategy
@@ -53,4 +51,3 @@ class Job(object):
 
     def get_distillation_alpha(self):
         return self.alpha
-

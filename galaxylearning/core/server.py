@@ -1,4 +1,3 @@
-
 import threading
 import time
 import os
@@ -10,6 +9,7 @@ from galaxylearning.core import communicate_server
 JOB_PATH = os.path.join(os.path.abspath("."), "res", "jobs_server")
 BASE_MODEL_PATH = os.path.join(os.path.abspath("."), "res", "models")
 
+
 class FlServer(object):
 
     def __init__(self):
@@ -19,18 +19,15 @@ class FlServer(object):
 class FlStandaloneServer(FlServer):
     def __init__(self, federate_strategy):
         super(FlStandaloneServer, self).__init__()
-        self.executor_pool = ThreadPoolExecutor(2)
+        self.executor_pool = ThreadPoolExecutor(5)
         if federate_strategy == FederateStrategy.FED_AVG:
             self.aggregator = FedAvgAggregator(WorkModeStrategy.WORKMODE_STANDALONE, JOB_PATH, BASE_MODEL_PATH)
         else:
-           pass
-
+            pass
 
     def start(self):
-        #self.executor_pool.submit(self.aggregator.aggregate)
-        self.aggregator.aggregate()
-
-
+        self.executor_pool.submit(self.aggregator.aggregate)
+        #self.aggregator.aggregate()
 
 
 class FlClusterServer(FlServer):
@@ -49,14 +46,9 @@ class FlClusterServer(FlServer):
 
     def start(self):
         self.executor_pool.submit(communicate_server.start_communicate_server, self.api_version, self.ip, self.port)
-        #self.executor_pool.submit(self.aggregator.aggregate)
-        #communicate_server.start_communicate_server(self.api_version, self.ip, self.port)
+        # self.executor_pool.submit(self.aggregator.aggregate)
+        # communicate_server.start_communicate_server(self.api_version, self.ip, self.port)
         if self.federate_strategy == FederateStrategy.FED_AVG:
             self.aggregator.aggregate()
         else:
             pass
-
-
-
-
-
